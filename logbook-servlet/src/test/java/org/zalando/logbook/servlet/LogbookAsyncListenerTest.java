@@ -8,16 +8,17 @@ import static org.mockito.Mockito.verify;
 
 class LogbookAsyncListenerTest {
 
-    private final AsyncOnCompleteListener asyncOnCompleteListener = mock(AsyncOnCompleteListener.class);
+    private final AsyncOnEventListener asyncOnCompleteListener = mock(AsyncOnEventListener.class);
+    private final AsyncOnEventListener asyncOnErrorListener = mock(AsyncOnEventListener.class);
     private final AsyncEvent asyncEvent = mock(AsyncEvent.class);
 
-    private final LogbookAsyncListener logbookAsyncListener = new LogbookAsyncListener(asyncOnCompleteListener);
+    private final LogbookAsyncListener logbookAsyncListener = new LogbookAsyncListener(asyncOnCompleteListener, asyncOnErrorListener);
 
     @Test
     void onComplete() throws IOException {
         logbookAsyncListener.onComplete(asyncEvent);
 
-        verify(asyncOnCompleteListener).onComplete(asyncEvent);
+        verify(asyncOnCompleteListener).onEvent(asyncEvent);
     }
 
     @Test
@@ -26,8 +27,10 @@ class LogbookAsyncListenerTest {
     }
 
     @Test
-    void onError() {
+    void onError() throws IOException {
         logbookAsyncListener.onError(asyncEvent);
+
+        verify(asyncOnErrorListener).onEvent(asyncEvent);
     }
 
     @Test

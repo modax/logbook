@@ -32,6 +32,7 @@ public final class LogbookFilter implements HttpFilter {
      */
     private final String responseProcessingStageName = ResponseProcessingStage.class.getName() + "-" + UUID.randomUUID();
     private final String responseWritingStageSynchronizationName = ResponseWritingStage.class.getName() + "-Synchronization-"+ UUID.randomUUID();
+    private final String responseWritingStageHadErrorName = ResponseWritingStage.class.getName() + "-HasError-" + UUID.randomUUID();
 
     private final Logbook logbook;
     private final Strategy strategy;
@@ -68,8 +69,12 @@ public final class LogbookFilter implements HttpFilter {
         }
 
         final ResponseWritingStage writing = processing.process(response);
-        request.setAsyncListener(Optional.of(new LogbookAsyncListener(event -> write(request, response, writing))));
+        request.setAsyncListener(Optional.of(new LogbookAsyncListener(
+            event -> this.write(request, response, writing),
+            event -> request.setAttribute(this.responseWritingStageHadErrorName, Boolean.TRUE)
+        )));
         request.setAttribute(responseWritingStageSynchronizationName, new AtomicBoolean(false));
+        request.setAttribute(this.responseWritingStageHadErrorName, Boolean.FALSE);
 
         chain.doFilter(request, response);
 
@@ -81,9 +86,12 @@ public final class LogbookFilter implements HttpFilter {
     }
 
     private void write(RemoteRequest request, LocalResponse response, ResponseWritingStage writing) throws IOException {
-        final AtomicBoolean attribute = (AtomicBoolean) request.getAttribute(responseWritingStageSynchronizationName);
-        if (!attribute.getAndSet(true)) {
-            response.flushBuffer();
+        AtomicBoolean synchronizationAttr = (AtomicBoolean)request.getAttribute(this.responseWritingStageSynchronizationName);
+        Boolean hadErrorAttr = (Boolean)request.getAttribute(this.responseWritingStageHadErrorName);
+        if (!synchronizationAttr.getAndSet(true)) {
+            if (!hadErrorAttr) {
+                response.flushBuffer();
+            }
             writing.write();
         }
     }

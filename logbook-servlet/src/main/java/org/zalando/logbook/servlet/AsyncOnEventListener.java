@@ -4,6 +4,6 @@ import java.io.IOException;
 import javax.servlet.AsyncEvent;
 
 @FunctionalInterface
-interface AsyncOnCompleteListener {
-    void onComplete(AsyncEvent event) throws IOException;
+interface AsyncOnEventListener {
+    void onEvent(AsyncEvent event) throws IOException;
 }
